@@ -11,11 +11,16 @@ class Intepretor:
         
 
     def eval(self, expr, environ=None):
+        #######################
+        # setting default env
+        #######################
         if environ is None:
             environ = self.globalEnv
+        #######################
+        # self evaluating expr
+        #######################
         if type(expr) == int or type(expr) == float:
             return expr
-    
         elif type(expr) == str:
             if environ.detect(expr):
                 return environ.lookup(expr)
@@ -26,6 +31,9 @@ class Intepretor:
             if expr == []:
                 return []
             else:
+                #######################
+                # arithmetic operation
+                #######################
                 if expr[0] == '+':
                     return self.eval(expr[1], environ) + self.eval(expr[2], environ)
                 elif expr[0] == '-':
@@ -36,6 +44,46 @@ class Intepretor:
                     return self.eval(expr[1], environ) * self.eval(expr[2], environ)
                 elif expr[0] == '/':
                     return self.eval(expr[1], environ) / self.eval(expr[2], environ)
+                ########################
+                # conditionals operation
+                ########################
+                elif expr[0] == '>':
+                    return self.eval(expr[1], environ) > self.eval(expr[2], environ)
+                elif expr[0] == '<':
+                    return self.eval(expr[1], environ) < self.eval(expr[2], environ)
+                elif expr[0] == '<=':
+                    return self.eval(expr[1], environ) <= self.eval(expr[2], environ)
+                elif expr[0] == '>=':
+                    return self.eval(expr[1], environ) >= self.eval(expr[2], environ)
+                elif expr[0] == '!=':
+                    return self.eval(expr[1], environ) != self.eval(expr[2], environ)
+                elif expr[0] == '==':
+                    return self.eval(expr[1], environ) == self.eval(expr[2], environ)
+                ########################
+                # branch operation
+                ########################
+                elif expr[0] == 'if':
+                    if len(expr) != 4 and len(expr) != 3:
+                        raise IntpretorException(f"Invalid if expression. Has {len(expr)} number of expression.")
+                    elif len(expr[1:]) == 2:
+                        if self.eval(expr[1],environ):
+                            return self.eval(expr[2],environ)
+                    else:
+                        if self.eval(expr[1],environ):
+                            return self.eval(expr[2],environ)
+                        else:
+                            return self.eval(expr[3],environ)
+                elif expr[0] == 'while':
+                    if len(expr) != 3 and len(expr) != 2:
+                        raise IntpretorException(f"Invalid while expression. Has {len(expr)} number of expression.")
+                    result = self.globalEnv.lookup('null')
+                    whileEnv = Environment(parent=environ)
+                    while (self.eval(expr[1],whileEnv)):
+                        result = self.eval(expr[2],whileEnv)
+                    return result
+                #######################
+                # assignment operation
+                #######################
                 elif expr[0] == 'var':
                     environ.set(expr[1],self.eval(expr[2],environ))
                     return self.eval(expr[2],environ)
@@ -116,6 +164,32 @@ class IntepretorTest(TestCase):
                              ['var','prod',['*', 'sum', 20]],
                              'prod'
                              ], 'result': 600})
+        for t in tt:
+            result = t['result']
+            value = t['value']
+            self.assertEqual(result, i.eval(value))
+    
+    def test_branch(self):
+        i = Intepretor()
+        tt = []
+        tt.append({'value': ['while',['>', 1, 2]], 'result': None})
+        tt.append({'value': ['block',
+                             ['var', 'count', 0],
+                             ['while',
+                             ['<', 'count', 5],
+                                ['set', 'count', ['+', 'count', 1]]
+                             ]], 'result': 5})
+        tt.append({'value': ['if',
+                             ['>', 1, ['+', 10 ,20]],
+                             10,
+                             25
+                             ], 'result': 25})
+        tt.append({'value': ['if',
+                             ['<', 1, ['+', 10 ,20]],
+                             10,
+                             25
+                             ], 'result': 10})
+        
         for t in tt:
             result = t['result']
             value = t['value']
