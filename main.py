@@ -6,7 +6,9 @@ class Intepretor:
     def __init__(self):
         self.environments = {}
         self.globalEnv = Environment(map={
-            'null': None
+            'null': None,
+            'true': True,
+            'false': False
         })
         
 
